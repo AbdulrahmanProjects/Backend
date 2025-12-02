@@ -104,16 +104,16 @@ function seedData() {
   ];
 
   const rooms = [
-    // Burj Al Arab
+
     { hotelIndex: 0, type: "deluxe suite", price: 1200 },
     { hotelIndex: 0, type: "panoramic suite", price: 1500 },
-    // The Ritz Paris
+
     { hotelIndex: 1, type: "superior", price: 750 },
     { hotelIndex: 1, type: "executive suite", price: 1100 },
-    // Marina Bay Sands
+
     { hotelIndex: 2, type: "deluxe", price: 450 },
     { hotelIndex: 2, type: "club room", price: 650 },
-    // Four Seasons Maldives
+
     { hotelIndex: 3, type: "beach villa", price: 1600 },
     { hotelIndex: 3, type: "water villa", price: 1900 },
   ];
