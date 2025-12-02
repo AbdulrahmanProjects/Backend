@@ -168,7 +168,7 @@ app.post("/api/bookings", (req, res) => {
           (updateErr) => {
             if (updateErr) {
               console.error("Error updating room status:", updateErr);
-              // continue; booking exists even if status update failed
+
             }
           }
         );
@@ -274,7 +274,7 @@ app.get("/api/admin/overview", async (req, res) => {
   }
 });
 
-// Simple 404 handler
+
 app.use((_req, res) => {
   res.status(404).json({ error: "Not found" });
 });
