@@ -93,7 +93,6 @@ app.get("/api/bookings", (req, res) => {
 
   const query = `
     SELECT b.id, b.guest_name AS guestName, b.check_in AS checkIn, b.check_out AS checkOut,
-           b.activities,
            b.created_at AS createdAt,
            r.id AS roomId, r.type AS roomType,
            h.id AS hotelId, h.name AS hotelName
@@ -108,21 +107,12 @@ app.get("/api/bookings", (req, res) => {
       console.error("Error fetching bookings:", err);
       return res.status(500).json({ error: "Failed to load bookings" });
     }
-    const parsed = rows.map((row) => ({
-      ...row,
-      activities: safeParseActivities(row.activities),
-    }));
-    res.json(parsed);
+    res.json(rows);
   });
 });
 
 app.post("/api/bookings", (req, res) => {
   const { roomId, guestName, checkIn, checkOut } = req.body || {};
-  const activities = Array.isArray(req.body?.activities)
-    ? req.body.activities
-        .map((a) => Number(a))
-        .filter((a) => Number.isFinite(a))
-    : [];
 
   if (!roomId || !guestName || !checkIn || !checkOut) {
     return res
@@ -154,8 +144,8 @@ app.post("/api/bookings", (req, res) => {
     }
 
     db.run(
-      "INSERT INTO bookings (room_id, guest_name, check_in, check_out, activities) VALUES (?, ?, ?, ?, ?)",
-      [roomId, guestName, checkIn, checkOut, JSON.stringify(activities)],
+      "INSERT INTO bookings (room_id, guest_name, check_in, check_out) VALUES (?, ?, ?, ?)",
+      [roomId, guestName, checkIn, checkOut],
       function (insertErr) {
         if (insertErr) {
           console.error("Error creating booking:", insertErr);
@@ -181,29 +171,10 @@ app.post("/api/bookings", (req, res) => {
             guestName,
             checkIn,
             checkOut,
-            activities,
           },
         });
       }
     );
-  });
-});
-
-app.get("/api/activities", (_req, res) => {
-  const query = `
-    SELECT a.id, a.name, a.description, a.price,
-           h.id AS hotelId, h.name AS hotelName
-    FROM activities a
-    JOIN hotels h ON a.hotel_id = h.id
-    ORDER BY a.id
-  `;
-
-  db.all(query, (err, rows) => {
-    if (err) {
-      console.error("Error fetching activities:", err);
-      return res.status(500).json({ error: "Failed to load activities" });
-    }
-    res.json(rows);
   });
 });
 
@@ -213,7 +184,7 @@ app.get("/api/admin/overview", async (req, res) => {
   }
 
   try {
-    const [hotels, rooms, bookings, activities] = await Promise.all([
+    const [hotels, rooms, bookings] = await Promise.all([
       dbAll(
         `
         SELECT
@@ -238,7 +209,6 @@ app.get("/api/admin/overview", async (req, res) => {
       dbAll(
         `
         SELECT b.id, b.guest_name AS guestName, b.check_in AS checkIn, b.check_out AS checkOut,
-               b.activities,
                b.created_at AS createdAt,
                r.id AS roomId, r.type AS roomType,
                h.id AS hotelId, h.name AS hotelName
@@ -248,25 +218,12 @@ app.get("/api/admin/overview", async (req, res) => {
         ORDER BY b.created_at DESC
       `
       ),
-      dbAll(
-        `
-        SELECT a.id, a.name, a.description, a.price,
-               h.id AS hotelId, h.name AS hotelName
-        FROM activities a
-        JOIN hotels h ON a.hotel_id = h.id
-        ORDER BY a.id
-      `
-      ),
     ]);
 
     res.json({
       hotels,
       rooms,
-      bookings: bookings.map((b) => ({
-        ...b,
-        activities: safeParseActivities(b.activities),
-      })),
-      activities,
+      bookings,
     });
   } catch (err) {
     console.error("Error building admin overview:", err);
@@ -278,16 +235,6 @@ app.get("/api/admin/overview", async (req, res) => {
 app.use((_req, res) => {
   res.status(404).json({ error: "Not found" });
 });
-
-function safeParseActivities(value) {
-  if (!value) return [];
-  try {
-    const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (_err) {
-    return [];
-  }
-}
 
 app.listen(PORT, () => {
   console.log(`Hotel System backend listening on port ${PORT}`);
